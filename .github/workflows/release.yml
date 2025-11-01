@@ -1,95 +1,230 @@
-name: Release Gem
+name: Release
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
 
 permissions:
   contents: write
   packages: write
   id-token: write
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false # Don't cancel releases in progress
 
 jobs:
-  release:
+  # Pre-release quality checks
+  quality-check:
+    name: Quality Check
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for changelog and tagging
+          fetch-depth: 0
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.3'
           bundler-cache: true
 
       - name: Install dependencies
-        run: bundle exec rake setup
+        run: bundle install
 
-      - name: Run quality checks
-        run: bundle exec rake quality
+      - name: Run tests
+        run: bundle exec rake spec
 
-      - name: Generate or update CHANGELOG
-        run: |
-          bundle exec rake changelog:generate
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "chore: update CHANGELOG [skip ci]" || echo "No changelog changes"
-          git push origin main || echo "No changes to push"
+      - name: Run linting
+        run: bundle exec rake rubocop
 
-      - name: Get next semantic version
-        id: version
-        uses: paulhatch/semantic-version@v5.4.0
+  # Semantic release
+  release:
+    name: Semantic Release
+    needs: quality-check
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_git_tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          tag_prefix: "v"
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: "${major}.${minor}.${patch}"
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Update version.rb with new version
-        run: |
-          VERSION_FILE="lib/retryable/version.rb"
-          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
-          echo "Updating version.rb to ${NEW_VERSION}"
-          sed -i "s/VERSION = .*/VERSION = '${NEW_VERSION}'/" "$VERSION_FILE"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$VERSION_FILE"
-          git commit -m "chore(release): bump version to v${NEW_VERSION}" || echo "No version change"
-          git push origin main
-
-      - name: Create and push tag
-        if: steps.version.outputs.new_tag != ''
-        run: |
-          git tag ${{ steps.version.outputs.new_tag }}
-          git push origin ${{ steps.version.outputs.new_tag }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          tag_name: ${{ steps.version.outputs.new_tag }}
-          name: Release ${{ steps.version.outputs.new_tag }}
-          generate_release_notes: true
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install semantic-release
+        run: |
+          npm install -g \
+            semantic-release@23 \
+            @semantic-release/git@10 \
+            @semantic-release/changelog@6 \
+            @semantic-release/exec@6 \
+            conventional-changelog-conventionalcommits@7
+
+      - name: Run semantic-release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          npx semantic-release
+
+  # Publish to RubyGems
+  publish-rubygems:
+    name: Publish to RubyGems
+    needs: release
+    runs-on: ubuntu-latest
+    if: needs.release.outputs.new_release_published == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
 
       - name: Build gem
         run: bundle exec rake build
 
       - name: Publish to RubyGems
-        if: startsWith(steps.version.outputs.new_tag, 'v')
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           mkdir -p ~/.gem
-          echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
+          cat > ~/.gem/credentials << EOF
+          ---
+          :rubygems_api_key: ${GEM_HOST_API_KEY}
+          EOF
           chmod 0600 ~/.gem/credentials
-          gem push pkg/*.gem
+          
+          # Find and push the gem
+          GEM_FILE=$(ls pkg/*.gem | head -1)
+          if [ -f "$GEM_FILE" ]; then
+            echo "Publishing ${GEM_FILE} to RubyGems..."
+            gem push "$GEM_FILE"
+          else
+            echo "Error: No gem file found in pkg/"
+            exit 1
+          fi
+          
+          # Clean up credentials
+          rm -f ~/.gem/credentials
+
+  # Publish to GitHub Packages
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: release
+    runs-on: ubuntu-latest
+    if: needs.release.outputs.new_release_published == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Build gem
+        run: bundle exec rake build
 
       - name: Publish to GitHub Packages
-        if: startsWith(steps.version.outputs.new_tag, 'v')
         env:
-          GEM_HOST_API_KEY: "Bearer ${{ secrets.GITHUB_TOKEN }}"
-        run: gem push pkg/*.gem --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.gem
+          cat > ~/.gem/credentials << EOF
+          ---
+          :github: Bearer ${GITHUB_TOKEN}
+          EOF
+          chmod 0600 ~/.gem/credentials
+          
+          # Find and push the gem
+          GEM_FILE=$(ls pkg/*.gem | head -1)
+          if [ -f "$GEM_FILE" ]; then
+            echo "Publishing ${GEM_FILE} to GitHub Packages..."
+            gem push "$GEM_FILE" \
+              --key github \
+              --host https://rubygems.pkg.github.com/${{ github.repository_owner }}
+          else
+            echo "Error: No gem file found in pkg/"
+            exit 1
+          fi
+          
+          # Clean up credentials
+          rm -f ~/.gem/credentials
+
+  # Summary
+  release-summary:
+    name: Release Summary
+    needs: [release, publish-rubygems, publish-github]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.release.outputs.new_release_published }}" == "true" ]]; then
+            echo "## ✅ New Release Published" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: ${{ needs.release.outputs.new_release_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Tag**: ${{ needs.release.outputs.new_release_git_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **RubyGems**: ${{ needs.publish-rubygems.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **GitHub Packages**: ${{ needs.publish-github.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Links" >> $GITHUB_STEP_SUMMARY
+            echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.release.outputs.new_release_git_tag }})" >> $GITHUB_STEP_SUMMARY
+            echo "- [RubyGems](https://rubygems.org/gems/retryable-async/versions/${{ needs.release.outputs.new_release_version }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ℹ️ No Release Required" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No releasable changes detected in commits." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Use conventional commit messages to trigger releases:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`feat:\` for minor version bump" >> $GITHUB_STEP_SUMMARY
+            echo "- \`fix:\` for patch version bump" >> $GITHUB_STEP_SUMMARY
+            echo "- \`BREAKING CHANGE:\` for major version bump" >> $GITHUB_STEP_SUMMARY
+          fi
