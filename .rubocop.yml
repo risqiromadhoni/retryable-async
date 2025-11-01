@@ -1,0 +1,73 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.0
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'pkg/**/*'
+
+# Gemspec Configuration
+Gemspec/RequiredRubyVersion:
+  Enabled: true
+
+Gemspec/RequireMFA:
+  Enabled: false # Optional for open source gems
+
+# Naming
+Naming/FileName:
+  Exclude:
+    - 'lib/retryable-async.rb' # Allow hyphenated gem entry file
+
+Naming/VariableNumber:
+  Enabled: false # Allow delay_1, delay_2 in tests
+
+# Layout
+Layout/LineLength:
+  Max: 120
+  AllowedPatterns:
+    - '\s*#' # Allow long comments
+
+# Metrics - Relax for tests
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*_spec.rb'
+    - 'Rakefile'
+
+Metrics/MethodLength:
+  Max: 15
+  CountComments: false
+
+Metrics/AbcSize:
+  Max: 20
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+# Lint
+Lint/UnusedBlockArgument:
+  AllowUnusedKeywordArguments: true
+  IgnoreEmptyBlocks: true
+
+# Style
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/Documentation:
+  Enabled: false # Don't require class documentation for now
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: no_comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: no_comma

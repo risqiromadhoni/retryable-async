@@ -279,7 +279,7 @@ RSpec.describe Retryable::Async do
         begin
           described_class.run(
             max_retries: 3,
-            on_retry: lambda { |exception, attempt, elapsed_time, next_delay|
+            on_retry: lambda { |_exception, attempt, _elapsed_time, _next_delay|
               callback_attempts << attempt
               retry_count += 1
             }
@@ -617,7 +617,7 @@ RSpec.describe Retryable::Async do
           exponential_backoff: true,
           multiplier: 2,
           max_delay: 0.2,
-          on_retry: ->(err, attempt, *) { retry_callback_count += 1 }
+          on_retry: ->(_err, _attempt, *) { retry_callback_count += 1 }
         ) do
           attempt_count += 1
           raise StandardError, 'retry this' if attempt_count < 3

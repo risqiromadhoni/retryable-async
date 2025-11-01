@@ -5,3 +5,4 @@ tmp/
 .DS_Store
 .ruby-version
 Gemfile.lock
+spec/examples.txt

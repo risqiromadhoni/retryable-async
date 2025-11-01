@@ -15,13 +15,22 @@ end
 
 # RuboCop linting
 RuboCop::RakeTask.new(:rubocop) do |t|
-  t.options = ['--display-cop-names', '--extra-details']
-  t.formatters = ['progress']
+  t.options = ['--display-cop-names', '--extra-details', '--format', 'progress']
+  t.fail_on_error = true
 end
 
 # Auto-correct RuboCop offenses
 RuboCop::RakeTask.new('rubocop:autocorrect') do |t|
   t.options = ['--autocorrect-all']
+  t.fail_on_error = false
+end
+
+# Generate RuboCop TODO for new cops
+namespace :rubocop do
+  desc 'Auto-generate .rubocop_todo.yml'
+  task :auto_gen_config do
+    sh 'bundle exec rubocop --auto-gen-config --auto-gen-only-exclude --exclude-limit 100'
+  end
 end
 
 namespace :spec do
