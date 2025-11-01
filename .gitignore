@@ -2,7 +2,9 @@ doc/
 pkg/
 tmp/
 ._*
+_site
 .DS_Store
 .ruby-version
 Gemfile.lock
-spec/examples.txt
+spec/*.txt
+coverage/

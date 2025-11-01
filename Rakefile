@@ -4,9 +4,6 @@ require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 require 'rubocop/rake_task'
 
-# Default task: run tests
-task default: %i[spec rubocop]
-
 # RSpec tests
 RSpec::Core::RakeTask.new(:spec) do |t|
   t.pattern = 'spec/**/*_spec.rb'
@@ -23,6 +20,32 @@ end
 RuboCop::RakeTask.new('rubocop:autocorrect') do |t|
   t.options = ['--autocorrect-all']
   t.fail_on_error = false
+end
+
+namespace :rbs do
+  desc 'Validate all RBS files for syntax and consistency'
+  task :validate do
+    sh 'bundle exec rbs validate'
+  end
+
+  desc 'Type check Ruby files using Steep'
+  task :check do
+    if File.exist?('Steepfile')
+      sh 'bundle exec steep check'
+    else
+      puts '⚠️  No Steepfile found — skipping type check'
+    end
+  end
+
+  desc 'Generate RBS prototypes from Ruby sources'
+  task :prototype do
+    lib_files = FileList['lib/**/*.rb']
+    lib_files.each do |path|
+      sig_path = path.sub(%r{^lib/}, 'sig/').sub(/\.rb$/, '.rbs')
+      mkdir_p File.dirname(sig_path)
+      sh "bundle exec rbs prototype rb #{path} > #{sig_path}"
+    end
+  end
 end
 
 # Generate RuboCop TODO for new cops
@@ -81,12 +104,15 @@ namespace :release do
     puts 'Running RuboCop...'
     Rake::Task['rubocop'].execute
 
+    puts 'Validating RBS signatures...'
+    Rake::Task['rbs:validate'].execute
+
     puts '✓ Ready for release!'
   end
 end
 
 desc 'Run all quality checks (tests + linting)'
-task quality: %i[spec rubocop]
+task quality: %i[spec rubocop rbs:validate]
 
 desc 'Setup development environment'
 task :setup do
@@ -111,3 +137,14 @@ task :version do
   require_relative 'lib/retryable-async'
   puts "retryable-async version: #{Retryable::VERSION}"
 end
+
+require 'rdoc/task'
+desc 'Generate documentation using rdoc'
+RDoc::Task.new do |doc|
+  doc.main = 'README.rdoc'
+  doc.title = 'retryable-async -- Unified retry helper for sync and async Ruby contexts'
+  doc.rdoc_files = FileList.new %w[lib LICENSE doc/**/*.rdoc *.rdoc]
+  doc.rdoc_dir = '_site'
+end
+
+task default: %i[spec rubocop rbs:validate]

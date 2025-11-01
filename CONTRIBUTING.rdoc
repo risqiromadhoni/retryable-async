@@ -1,0 +1,41 @@
+= Source Repository
+
+retryable-async is hosted at GitHub. The GitHub Web page is
+https://github.com/risqiromadhoni/retryable-async . The public Git clone URL is
+
+  https://github.com/risqiromadhoni/retryable-async.git
+
+= Running the Rake Test Suite
+
+If you wish to run the unit and functional tests that come with Rake:
+
+* +cd+ into the top project directory of rake.
+* Install gem dependency using bundler:
+
+    $ bundle exec rake setup
+
+* Run the test suite
+
+    $ bundle exec rake spec
+
+= RuboCop
+
+retryable-async uses RuboCop to enforce a consistent style on new changes being
+proposed. You can check your code with RuboCop using:
+
+  $ bundle exec rake rubocop
+
+= Issues and Bug Reports
+
+Feel free to submit commits or feature requests.  If you send a patch,
+remember to update the corresponding unit tests.  In fact, the team prefers
+a new feature to be submitted in the form of new unit tests.
+
+For other information, feel free to ask on the ruby-talk mailing list.
+
+If you have found a bug in retryable-async, please try with the latest version of retryable-async
+before filing an issue.  Also check History.rdoc for bug fixes that may have
+addressed your issue.
+
+When submitting pull requests, please check the status checks on your PR page
+to confirm if it says "All checks have passed".
