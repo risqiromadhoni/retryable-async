@@ -11,7 +11,3 @@ group :development do
   gem 'rspec', '~> 3.13', '>= 3.13.2'
   gem 'rubocop', require: false
 end
-
-group :test do
-  gem 'async', '~> 2.34'
-end
