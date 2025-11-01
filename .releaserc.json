@@ -59,9 +59,7 @@
     [
       "@semantic-release/exec",
       {
-        "verifyConditionsCmd": "bundle exec rake build",
-        "prepareCmd": "sed -i.bak \"s/VERSION = '[^']*'/VERSION = '${nextRelease.version}'/\" lib/retryable/version.rb && rm -f lib/retryable/version.rb.bak",
-        "publishCmd": "echo 'Gem will be published in separate job'"
+        "prepareCmd": "sed -i.bak \"s/VERSION = '[^']*'/VERSION = '${nextRelease.version}'/\" lib/retryable/version.rb && rm -f lib/retryable/version.rb.bak"
       }
     ],
     [

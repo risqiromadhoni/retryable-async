@@ -21,9 +21,20 @@ Gem::Specification.new do |s|
 
   s.require_paths = ['lib']
 
-  s.files = %w[
-    CHANGELOG.md
-    LICENSE
-    README
-  ] + Dir.glob('lib/**/*.rb') + Dir.glob('spec/**/*.rb')
+  s.files = [
+    'LICENSE',
+    'README.md'
+  ]
+  s.files << 'CHANGELOG.md' if File.exist?('CHANGELOG.md')
+  s.files += Dir.glob('lib/**/*.rb')
+  s.files += Dir.glob('sig/**/*.rbs') if Dir.exist?('sig')
+
+  s.metadata = {
+    'bug_tracker_uri' => 'https://github.com/risqiromadhoni/retryable-async/issues',
+    'changelog_uri' => 'https://github.com/risqiromadhoni/retryable-async/releases',
+    'documentation_uri' => 'https://risqiromadhoni.github.io/retryable-async',
+    'homepage_uri' => s.homepage,
+    'source_code_uri' => 'https://github.com/risqiromadhoni/retryable-async',
+    'rubygems_mfa_required' => 'true'
+  }
 end

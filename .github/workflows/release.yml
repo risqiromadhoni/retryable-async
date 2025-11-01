@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,10 +15,9 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false # Don't cancel releases in progress
+  cancel-in-progress: false 
 
 jobs:
-  # Pre-release quality checks
   quality-check:
     name: Quality Check
     runs-on: ubuntu-latest
@@ -88,9 +87,12 @@ jobs:
         id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
         run: |
           npx semantic-release
+
+      - name: Build gem after release
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: bundle exec rake build
 
   # Publish to RubyGems
   publish-rubygems:
@@ -142,7 +144,6 @@ jobs:
           # Clean up credentials
           rm -f ~/.gem/credentials
 
-  # Publish to GitHub Packages
   publish-github:
     name: Publish to GitHub Packages
     needs: release
@@ -194,7 +195,6 @@ jobs:
           # Clean up credentials
           rm -f ~/.gem/credentials
 
-  # Summary
   release-summary:
     name: Release Summary
     needs: [release, publish-rubygems, publish-github]
