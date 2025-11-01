@@ -3,6 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/retryable-async.svg)](https://badge.fury.io/rb/retryable-async)
 [![MIT License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/risqiromadhoni/retryable-async/graph/badge.svg?token=2OXGWPY1G7)](https://codecov.io/gh/risqiromadhoni/retryable-async)
+[![Release](https://github.com/risqiromadhoni/retryable-async/actions/workflows/release.yml/badge.svg)](https://github.com/risqiromadhoni/retryable-async/actions/workflows/release.yml)
 
 Unified retry helper for sync and async Ruby contexts.
 
