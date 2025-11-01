@@ -21,8 +21,9 @@ Gem::Specification.new do |s|
 
   s.require_paths = ['lib']
 
-  s.files = [
-    'LICENSE',
-    'README.md'
+  s.files = %w[
+    CHANGELOG
+    LICENSE
+    README
   ] + Dir.glob('lib/**/*.rb') + Dir.glob('spec/**/*.rb')
 end
