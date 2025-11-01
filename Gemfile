@@ -4,9 +4,10 @@ source 'https://rubygems.org'
 gemspec
 
 group :development do
-  gem 'commitlint', require: false
+  gem 'commitlint', '~> 0.3.0'
+  gem 'github_changelog_generator', '~> 1.16', '>= 1.16.4'
   gem 'lefthook', require: false
   gem 'rake', '~> 13.3', '>= 13.3.1'
   gem 'rspec', '~> 3.13', '>= 3.13.2'
-  gem 'rubocop', '~> 1.81', '>= 1.81.7'
+  gem 'rubocop', require: false
 end
