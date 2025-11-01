@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 module Retryable
+  # Provides a mechanism to retry a block of code with asynchronous sleep.
+  # This is useful for operations that might fail intermittently, such as network requests.
   module Async
+    # Default options for the retry mechanism.
     DEFAULT_OPTIONS = {
       max_attempts: 3,
       on: [StandardError],
@@ -9,8 +12,24 @@ module Retryable
       backoff: :linear, # or :exponential
       jitter: false,
       before_retry: nil
-    }
+    }.freeze
 
+    # Runs a block of code and retries it if it fails.
+    #
+    # @param opts [Hash] The options to control the retry mechanism.
+    # @option opts [Integer] :max_attempts The maximum number of times to try the block.
+    # @option opts [Array<Exception>] :on The exceptions to catch and retry on.
+    # @option opts [Float] :base_delay The base delay in seconds between retries.
+    # @option opts [Symbol] :backoff The backoff strategy to use. Can be `:linear` or `:exponential`.
+    # @option opts [Boolean] :jitter Whether to add a random amount of jitter to the delay.
+    # @option opts [Proc] :before_retry A proc to call before each retry. It receives the attempt number and the exception.
+    #
+    # @yield The block of code to run.
+    #
+    # @example
+    #   Retryable::Async.run(max_attempts: 5, on: [Net::ReadTimeout]) do
+    #     # code that might fail
+    #   end
     def self.run(**opts)
       options = DEFAULT_OPTIONS.merge(opts)
       attempt = 0
@@ -28,6 +47,11 @@ module Retryable
       end
     end
 
+    # Calculates the delay for the next retry.
+    #
+    # @param attempt [Integer] The current attempt number.
+    # @param options [Hash] The options for the retry mechanism.
+    # @return [Float] The delay in seconds.
     def self.calculate_delay(attempt, options)
       delay =
         case options[:backoff]
@@ -39,6 +63,11 @@ module Retryable
       options[:jitter] ? delay * (0.5 + rand) : delay
     end
 
+    # Sleeps for the given number of seconds.
+    # If running in an async task, it uses `Async::Task.current.sleep`.
+    # Otherwise, it uses the standard `sleep`.
+    #
+    # @param seconds [Float] The number of seconds to sleep.
     def self.async_sleep(seconds)
       if defined?(Async::Task) && Async::Task.current?
         Async::Task.current.sleep(seconds)
