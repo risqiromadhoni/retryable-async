@@ -1,0 +1,7 @@
+doc/
+pkg/
+tmp/
+._*
+.DS_Store
+.ruby-version
+Gemfile.lock
