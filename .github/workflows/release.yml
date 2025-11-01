@@ -1,0 +1,95 @@
+name: Release Gem
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Required for changelog and tagging
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle exec rake setup
+
+      - name: Run quality checks
+        run: bundle exec rake quality
+
+      - name: Generate or update CHANGELOG
+        run: |
+          bundle exec rake changelog:generate
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG [skip ci]" || echo "No changelog changes"
+          git push origin main || echo "No changes to push"
+
+      - name: Get next semantic version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}"
+
+      - name: Update version.rb with new version
+        run: |
+          VERSION_FILE="lib/retryable/version.rb"
+          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+          echo "Updating version.rb to ${NEW_VERSION}"
+          sed -i "s/VERSION = .*/VERSION = '${NEW_VERSION}'/" "$VERSION_FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$VERSION_FILE"
+          git commit -m "chore(release): bump version to v${NEW_VERSION}" || echo "No version change"
+          git push origin main
+
+      - name: Create and push tag
+        if: steps.version.outputs.new_tag != ''
+        run: |
+          git tag ${{ steps.version.outputs.new_tag }}
+          git push origin ${{ steps.version.outputs.new_tag }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: Release ${{ steps.version.outputs.new_tag }}
+          generate_release_notes: true
+
+      - name: Build gem
+        run: bundle exec rake build
+
+      - name: Publish to RubyGems
+        if: startsWith(steps.version.outputs.new_tag, 'v')
+        run: |
+          mkdir -p ~/.gem
+          echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem push pkg/*.gem
+
+      - name: Publish to GitHub Packages
+        if: startsWith(steps.version.outputs.new_tag, 'v')
+        env:
+          GEM_HOST_API_KEY: "Bearer ${{ secrets.GITHUB_TOKEN }}"
+        run: gem push pkg/*.gem --key github --host "https://rubygems.pkg.github.com/${{ github.repository_owner }}"
