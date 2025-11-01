@@ -8,6 +8,7 @@ group :development do
   gem 'github_changelog_generator', '~> 1.16', '>= 1.16.4'
   gem 'lefthook', require: false
   gem 'rake', '~> 13.3', '>= 13.3.1'
+  gem 'rbs', '~> 3.9', '>= 3.9.5'
   gem 'rspec', '~> 3.13', '>= 3.13.2'
   gem 'rubocop', require: false
 end

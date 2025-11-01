@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'retryable/async'
+require_relative 'retryable/version'
 
 module Retryable
-  # Package version
-  VERSION = '0.0.0'
 end
