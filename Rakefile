@@ -141,9 +141,9 @@ end
 require 'rdoc/task'
 desc 'Generate documentation using rdoc'
 RDoc::Task.new do |doc|
-  doc.main = 'README.rdoc'
+  doc.main = 'rdoc/README.rdoc'
   doc.title = 'retryable-async -- Unified retry helper for sync and async Ruby contexts'
-  doc.rdoc_files = FileList.new %w[lib LICENSE doc/**/*.rdoc *.rdoc]
+  doc.rdoc_files = FileList.new %w[lib LICENSE rdoc/**/*.rdoc *.rdoc]
   doc.rdoc_dir = '_site'
 end
 
