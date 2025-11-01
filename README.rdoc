@@ -1,47 +1,41 @@
-# Retryable::Async
+= Retryable::Async
 
-[![Gem Version](https://badge.fury.io/rb/retryable-async.svg)](https://badge.fury.io/rb/retryable-async)
-[![MIT License](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/risqiromadhoni/retryable-async/graph/badge.svg?token=2OXGWPY1G7)](https://codecov.io/gh/risqiromadhoni/retryable-async)
+home :: https://github.com/risqiromadhoni/retryable-async
+bugs :: https://github.com/risqiromadhoni/retryable-async/issues
+docs :: https://risqiromadhoni.github.io/retryable-async
 
 Unified retry helper for sync and async Ruby contexts.
 
 `retryable-async` provides a lightweight, zero-dependency retry mechanism that works seamlessly in both standard synchronous Ruby environments and asynchronous contexts powered by `async`.
 
-## Features
+== Features
 
-*   **Unified API:** The same code works for both synchronous and asynchronous operations.
-*   **Configurable:** Control the number of attempts, exceptions to catch, and backoff strategy.
-*   **Backoff Strategies:** Supports linear and exponential backoff.
-*   **Jitter:** Adds randomness to backoff delays to prevent thundering herd problems.
-*   **Callbacks:** Execute custom logic before a retry.
-*   **Lightweight:** No external dependencies.
+*   Unified API:: The same code works for both synchronous and asynchronous operations.
+*   Configurable:: Control the number of attempts, exceptions to catch, and backoff strategy.
+*   Backoff Strategies:: Supports linear and exponential backoff.
+*   Jitter:: Adds randomness to backoff delays to prevent thundering herd problems.
+*   Callbacks:: Execute custom logic before a retry.
+*   Lightweight:: No external dependencies.
 
-## Installation
+== Installation
 
 Add this line to your application's Gemfile:
 
-```ruby
-gem 'retryable-async'
-```
+  gem 'retryable-async'
 
 And then execute:
 
-```bash
-$ bundle install
-```
+  $ bundle install
 
 Or install it yourself as:
 
-```bash
-$ gem install retryable-async
-```
+  $ gem install retryable-async
 
-## Usage
+== Usage
 
 The `Retryable::Async.run` method is the main entry point. It takes a block of code that you want to execute and will retry it if it fails.
 
-### Basic Usage
+=== Basic Usage
 
 Here is a simple example of retrying a block of code up to 3 times:
 
@@ -58,7 +52,7 @@ puts "Succeeded after #{counter} attempts"
 # => Succeeded after 3 attempts
 ```
 
-### Options
+=== Options
 
 You can customize the behavior of `Retryable::Async.run` with the following options:
 
@@ -69,7 +63,7 @@ You can customize the behavior of `Retryable::Async.run` with the following opti
 *   `:jitter` (Boolean): Whether to apply jitter to the backoff delay. (Default: `false`)
 *   `:before_retry` (Proc): A callback to execute before each retry. It receives the current attempt number and the exception that caused the retry.
 
-### Advanced Usage
+=== Advanced Usage
 
 Here is a more advanced example that uses several options:
 
@@ -92,7 +86,7 @@ Retryable::Async.run(
 end
 ```
 
-### Async Environments
+=== Async Environments
 
 When used in an environment with the `async` gem, `Retryable::Async` will use `Async::Task.current.sleep` for non-blocking delays. Otherwise, it falls back to the standard `sleep`.
 
@@ -109,14 +103,14 @@ Async do
 end
 ```
 
-## Development
+== Development
 
 After checking out the repo, run `bundle install` to install dependencies. Then, run `rake spec` to run the tests.
 
-## Contributing
+== Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/risqiromadhoni/retryable-async.
 
-## License
+== License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

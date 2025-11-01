@@ -2,6 +2,3 @@
 
 require_relative 'retryable/async'
 require_relative 'retryable/version'
-
-module Retryable
-end

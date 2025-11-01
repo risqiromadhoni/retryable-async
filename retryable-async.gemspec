@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   DESCRIPTION
 
   s.platform = Gem::Platform::RUBY
-  s.required_ruby_version = '>= 3.0.0'
+  s.required_ruby_version = '>= 3.1.0'
 
   s.require_paths = ['lib']
 
